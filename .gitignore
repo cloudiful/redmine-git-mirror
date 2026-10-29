@@ -1,0 +1,30 @@
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Private keys and certificates
+*.key
+*.pem
+id_rsa
+id_rsa.*
+id_ed25519
+id_ed25519.*
+id_ecdsa
+id_ecdsa.*
+
+# Ruby dependencies, test coverage, and build output
+.bundle/
+vendor/bundle/
+coverage/
+tmp/
+log/
+pkg/
+*.gem
+
+# Editor and OS artifacts
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store

@@ -1,0 +1,94 @@
+<h2>Git mirror settings</h2>
+
+<% if @errors.present? %>
+  <div id="errorExplanation" class="errorExplanation">
+    <ul>
+      <% @errors.each do |message| %>
+        <li><%= h message %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<div class="box tabular">
+  <h3>API key</h3>
+  <p>
+    <label for="redmine_git_mirror_api_key">Current key</label>
+    <input type="text" id="redmine_git_mirror_api_key" size="60" readonly="readonly"
+           autocomplete="off" spellcheck="false" value="<%= h @api_key %>" />
+    <button type="button" id="redmine_git_mirror_copy_key">Copy</button>
+    <span id="redmine_git_mirror_copy_status" role="status"></span>
+  </p>
+  <p class="warning">
+    Rotating the key immediately invalidates the previous key. Update the
+    caller with the new key right away.
+  </p>
+  <%= form_tag(rotate_redmine_git_mirror_api_key_path, method: :post) do %>
+    <%= submit_tag('Rotate API key', data: { confirm: 'Rotate the API key? The previous key stops working immediately.' }) %>
+  <% end %>
+  <p>
+    Provision the key to the caller as an <code>Authorization: Bearer
+    &lt;key&gt;</code> header. The key is never accepted as a URL
+    parameter and is never returned by the mirror API.
+  </p>
+</div>
+
+<%= form_tag(redmine_git_mirror_settings_path, method: :patch) do %>
+  <div class="box tabular">
+    <h3>Mirror configuration</h3>
+    <p>
+      <label for="redmine_git_mirror_allowed_hosts">Allowed Git hosts</label>
+      <%= text_field_tag(:allowed_hosts, @allowed_hosts, size: 60,
+                         id: 'redmine_git_mirror_allowed_hosts') %>
+      <br /><em>Comma-separated host names, for example
+      <code>git.example.com, git.example.org</code>. At least one host is
+      required before registration or refresh requests are accepted; an
+      already queued job can still run its git fetch before post-fetch
+      validation rejects the stored URL. A saved value
+      takes precedence over the legacy
+      <code>REDMINE_GIT_MIRROR_ALLOWED_HOSTS</code> environment variable.</em>
+    </p>
+    <p>
+      <label for="redmine_git_mirror_mirror_root">Mirror root</label>
+      <%= text_field_tag(:mirror_root, @mirror_root, size: 60,
+                         id: 'redmine_git_mirror_mirror_root') %>
+      <br /><em>Absolute path (default
+      <code>/var/lib/redmine/repositories</code>). A saved value takes
+      precedence over the legacy <code>REDMINE_GIT_MIRROR_ROOT</code>
+      environment variable.</em>
+    </p>
+    <p class="warning">
+      The mirror root must be a persistent directory shared by the
+      Redmine web and Sidekiq containers. Changing it does not move
+      existing mirrors and does not update existing repository records;
+      only newly queued mirrors use the new root.
+    </p>
+    <p><%= submit_tag('Save') %></p>
+  </div>
+<% end %>
+
+<script>
+(function() {
+  var button = document.getElementById('redmine_git_mirror_copy_key');
+  var field = document.getElementById('redmine_git_mirror_api_key');
+  var status = document.getElementById('redmine_git_mirror_copy_status');
+  if (!button || !field) { return; }
+  function done(message) { if (status) { status.textContent = message; } }
+  button.addEventListener('click', function() {
+    var value = field.value;
+    if (!value) { done('No key to copy.'); return; }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(value).then(
+        function() { done('Copied.'); },
+        function() { field.select(); done('Copy manually (Ctrl+C).'); }
+      );
+    } else {
+      field.select();
+      try {
+        if (document.execCommand('copy')) { done('Copied.'); }
+        else { done('Copy manually (Ctrl+C).'); }
+      } catch (e) { done('Copy manually (Ctrl+C).'); }
+    }
+  });
+})();
+</script>
